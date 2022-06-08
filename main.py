@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
+
 import tweepy
 from dotenv import load_dotenv
 import os
@@ -35,31 +36,41 @@ def setup():
     return api
 
 
-api = setup()
-userID = "wordleanswerguy"
-tweets = api.user_timeline(screen_name=userID, count=3, include_rts=False, exclude_replies=True)
-# for tweet in tweets:
-#     print(tweet.text)
-#     print("-------------------------")
+# Finds the correct Wordle word from Tweet
+def find_word(tweets):
+    for tweet in tweets:
+        tweet = tweet.text
+        tweet = tweet.replace('\n', ' ')
+        if not tweet.startswith("Today’s #Wordle answer is"):
+            continue
+        break
 
-for tweet in tweets:
-    tweet = tweet.text
-    tweet = tweet.replace('\n', ' ')
-    if not tweet.startswith("Today’s #Wordle answer is"):
-        continue
-    print(tweet)
-    break
-
-first = tweets[0].text
-first = first.replace('\n', ' ')
-words = first.split(" ")
-words = list(filter(lambda x: len(x) == 5, words))
-print(words)
+    word = tweet.replace('\n', ' ')
+    words = word.split(" ")
+    words = list(filter(lambda x: len(x) == 5, words))
+    return words[0]
 
 
+# Enter the correct word in Wordle
+def auto_wordle(driver, word):
+    driver.get("https://www.nytimes.com/games/wordle/index.html")
+    page = driver.find_element(By.TAG_NAME, "body")
+    page.click()
+    page.send_keys(word)
+    page.send_keys(Keys.RETURN)
 
-# driver.get("https://www.nytimes.com/games/wordle/index.html")
-# page = driver.find_element(By.TAG_NAME, "body")
-# page.click()
-# page.send_keys("soare")
-# page.send_keys(Keys.RETURN)
+    driver.quit
+
+
+
+def main():
+    api = setup()
+    driver = create_driver()
+    userID = "wordleanswerguy"
+    tweets = api.user_timeline(screen_name=userID, count=3, include_rts=False, exclude_replies=True)
+    word = find_word(tweets)
+    auto_wordle(driver, word)
+
+
+if __name__ == '__main__':
+    main()
